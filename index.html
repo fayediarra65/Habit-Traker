@@ -10,31 +10,33 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #E8D5C4 0%, #F5E6D8 50%, #E8C4D5 100%);
             min-height: 100vh;
             padding: 20px;
         }
         .container {
             max-width: 1600px;
             margin: 0 auto;
-            background: white;
+            background: #FFF8F3;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(251, 194, 235, 0.4);
+            box-shadow: 0 10px 40px rgba(139, 90, 69, 0.2);
             padding: 30px;
         }
         .header {
             text-align: center;
             margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #f8a5c2;
+            padding: 30px;
+            background: linear-gradient(135deg, #C9A58C 0%, #B8967E 100%);
+            border-radius: 15px;
+            color: white;
         }
-        .header h1 { color: #f8a5c2; font-size: 2.5em; margin-bottom: 10px; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
         .tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
-            border-bottom: 2px solid #f0f0f0;
+            border-bottom: 2px solid #E8D5C4;
             flex-wrap: wrap;
         }
         .tab {
@@ -44,11 +46,15 @@
             cursor: pointer;
             font-size: 1em;
             font-weight: bold;
-            color: #666;
+            color: #8B5A45;
             border-bottom: 3px solid transparent;
             transition: all 0.3s;
         }
-        .tab.active { color: #f8a5c2; border-bottom-color: #f8a5c2; }
+        .tab.active { 
+            color: #6B4532; 
+            border-bottom-color: #C9A58C;
+            background: #F5E6D8;
+        }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .stats-grid {
@@ -58,7 +64,7 @@
             margin-bottom: 30px;
         }
         .stat-card {
-            background: linear-gradient(135deg, #fbc2eb 0%, #f8a5c2 100%);
+            background: linear-gradient(135deg, #C9A58C 0%, #B8967E 100%);
             padding: 20px;
             border-radius: 12px;
             color: white;
@@ -67,13 +73,13 @@
         .stat-card .number { font-size: 2.5em; font-weight: bold; }
         .stat-card .label { font-size: 0.9em; opacity: 0.9; margin-top: 5px; }
         .add-section {
-            background: #fef5f9;
+            background: #FFF8F3;
             padding: 25px;
             border-radius: 12px;
             margin-bottom: 30px;
-            border: 2px solid #fbc2eb;
+            border: 2px solid #E8D5C4;
         }
-        .add-section h3 { color: #f8a5c2; margin-bottom: 15px; }
+        .add-section h3 { color: #8B5A45; margin-bottom: 15px; }
         .form-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -81,16 +87,21 @@
             margin-bottom: 15px;
         }
         .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .form-group label { font-weight: bold; color: #666; font-size: 0.9em; }
+        .form-group label { font-weight: bold; color: #6B4532; font-size: 0.9em; }
         .form-input, .form-select, .form-textarea {
             padding: 10px;
-            border: 2px solid #f8a5c2;
+            border: 2px solid #E8D5C4;
             border-radius: 8px;
             font-size: 1em;
+            background: white;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #C9A58C;
         }
         .form-textarea { min-height: 80px; resize: vertical; }
         .btn-primary {
-            background: linear-gradient(135deg, #fbc2eb 0%, #f8a5c2 100%);
+            background: linear-gradient(135deg, #C9A58C 0%, #B8967E 100%);
             color: white;
             border: none;
             padding: 12px 25px;
@@ -107,8 +118,8 @@
             background: white;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 5px solid #f8a5c2;
+            box-shadow: 0 2px 10px rgba(139, 90, 69, 0.1);
+            border-left: 5px solid #C9A58C;
         }
         .item-header {
             display: flex;
@@ -116,7 +127,7 @@
             align-items: start;
             margin-bottom: 15px;
         }
-        .item-title { font-size: 1.2em; font-weight: bold; color: #333; flex: 1; }
+        .item-title { font-size: 1.2em; font-weight: bold; color: #6B4532; flex: 1; }
         .item-badge {
             padding: 5px 15px;
             border-radius: 20px;
@@ -124,13 +135,13 @@
             font-weight: bold;
             margin-left: 10px;
         }
-        .badge-urgent { background: #ff6b6b; color: white; }
-        .badge-important { background: #ffd93d; color: #333; }
-        .badge-normal { background: #6bcf7f; color: white; }
-        .badge-later { background: #a6c1ee; color: white; }
-        .badge-daily { background: #f8a5c2; color: white; }
-        .badge-weekly { background: #a6c1ee; color: white; }
-        .badge-temporary { background: #ffd93d; color: #333; }
+        .badge-urgent { background: #D98880; color: white; }
+        .badge-important { background: #E8C4A0; color: #6B4532; }
+        .badge-normal { background: #90C890; color: white; }
+        .badge-later { background: #C4D5E8; color: #455566; }
+        .badge-daily { background: #E8C4D5; color: #6B4555; }
+        .badge-weekly { background: #C4D5E8; color: #455566; }
+        .badge-temporary { background: #E8C4A0; color: #6B4532; }
         .item-days {
             display: flex;
             gap: 8px;
@@ -143,15 +154,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid #f8a5c2;
+            border: 2px solid #C9A58C;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             font-size: 0.85em;
             transition: all 0.2s;
+            background: white;
         }
         .day-box.checked {
-            background: linear-gradient(135deg, #fbc2eb 0%, #f8a5c2 100%);
+            background: linear-gradient(135deg, #C9A58C 0%, #B8967E 100%);
             color: white;
         }
         .day-box:hover { transform: scale(1.1); }
@@ -166,18 +178,18 @@
             transition: transform 0.2s;
         }
         .btn-small:hover { transform: scale(1.05); }
-        .btn-done { background: #6bcf7f; color: white; }
-        .btn-edit { background: #a6c1ee; color: white; }
-        .btn-delete { background: #ff6b6b; color: white; }
+        .btn-done { background: #90C890; color: white; }
+        .btn-edit { background: #C9A58C; color: white; }
+        .btn-delete { background: #D98880; color: white; }
         .notification {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: linear-gradient(135deg, #fbc2eb 0%, #f8a5c2 100%);
+            background: linear-gradient(135deg, #C9A58C 0%, #B8967E 100%);
             color: white;
             padding: 20px 30px;
             border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 20px rgba(139, 90, 69, 0.4);
             z-index: 2000;
             animation: slideIn 0.3s ease;
         }
@@ -188,24 +200,27 @@
         .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .filter-btn {
             padding: 8px 20px;
-            border: 2px solid #f8a5c2;
+            border: 2px solid #C9A58C;
             background: white;
-            color: #f8a5c2;
+            color: #8B5A45;
             border-radius: 20px;
             cursor: pointer;
             font-weight: bold;
             transition: all 0.2s;
         }
         .filter-btn:hover { transform: scale(1.05); }
-        .filter-btn.active { background: linear-gradient(135deg, #fbc2eb 0%, #f8a5c2 100%); color: white; }
+        .filter-btn.active { 
+            background: linear-gradient(135deg, #C9A58C 0%, #B8967E 100%); 
+            color: white; 
+        }
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #999;
+            color: #A0826D;
             font-style: italic;
         }
         .rewards-section {
-            background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%);
+            background: linear-gradient(135deg, #E8C4A0 0%, #D9B38C 100%);
             padding: 30px;
             border-radius: 15px;
             text-align: center;
@@ -216,7 +231,7 @@
             background: white;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(139, 90, 69, 0.1);
         }
         .calendar-header {
             display: flex;
@@ -234,33 +249,34 @@
         .calendar-day-header {
             text-align: center;
             font-weight: bold;
-            color: #f8a5c2;
+            color: #C9A58C;
             padding: 10px;
         }
         .calendar-day {
             min-height: 100px;
-            border: 2px solid #f0f0f0;
+            border: 2px solid #E8D5C4;
             border-radius: 8px;
             padding: 10px;
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
+            background: white;
         }
-        .calendar-day:hover { border-color: #f8a5c2; background: #fef5f9; }
-        .calendar-day.has-items { background: linear-gradient(135deg, #fbc2eb20 0%, #f8a5c220 100%); }
+        .calendar-day:hover { border-color: #C9A58C; background: #FFF8F3; }
+        .calendar-day.has-items { background: linear-gradient(135deg, #E8D5C420 0%, #C9A58C20 100%); }
         .day-number {
             font-weight: bold;
             margin-bottom: 5px;
-            color: #333;
+            color: #6B4532;
         }
         .day-items {
             font-size: 0.75em;
-            color: #666;
+            color: #8B5A45;
         }
         .day-items div {
             margin: 2px 0;
             padding: 2px 5px;
-            background: #f8a5c2;
+            background: #C9A58C;
             color: white;
             border-radius: 3px;
             white-space: nowrap;
@@ -277,10 +293,10 @@
             background: white;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(139, 90, 69, 0.1);
         }
         .chart-box h3 {
-            color: #f8a5c2;
+            color: #8B5A45;
             margin-bottom: 15px;
             text-align: center;
         }
