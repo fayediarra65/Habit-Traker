@@ -1142,21 +1142,25 @@
             });
         }
 
-        // EXPORT PDF
-        function exportPDF() {
-            showNotif('📄 Génération du PDF...');
-            const element = document.getElementById('dashboard');
-            html2canvas(element).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgWidth = 190;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-                pdf.save(`rapport-${new Date().toISOString().split('T')[0]}.pdf`);
-                showNotif('✅ PDF téléchargé !');
-            });
-        }
+    function exportPDF() {
+    showNotif('📄 Génération du PDF...');
+    const element = document.querySelector('.container');
+
+    setTimeout(() => {
+        html2canvas(element, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            const imgWidth = 190;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+            pdf.save('rapport.pdf');
+            showNotif('✅ PDF téléchargé !');
+        });
+    }, 500);
+}
 
         function showNotif(msg) {
             const notif = document.createElement('div');
@@ -1173,3 +1177,4 @@
     </script>
 </body>
 </html>
+
