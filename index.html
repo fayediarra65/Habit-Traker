@@ -931,9 +931,11 @@
             task.completed = !task.completed;
             
             if (task.completed) {
+                task.completedAt = new Date().toISOString();
                 data.points += 20;
                 showNotif('🎉 +20 points !');
             } else {
+                task.completedAt = null;
                 data.points -= 20;
                 showNotif('↩️ -20 points');
             }
@@ -942,6 +944,22 @@
             saveData();
             render();
             updateCharts();
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+            const months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+            
+            const dayName = days[date.getDay()];
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${dayName} ${day} ${month} ${year}, ${hours}:${minutes}`;
         }
 
         function deleteItem(type, id) {
@@ -1036,6 +1054,16 @@
                     </div>
                     <p style="color: #666; margin: 10px 0;">${t.type === 'work' ? '💼 Pro' : '🏠 Perso'}</p>
                     ${t.notes ? `<p style="color: #666; font-style: italic; margin-top: 10px;">${t.notes}</p>` : ''}
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #E8D5C4;">
+                        <p style="color: #8B5A45; font-size: 0.85em; margin-bottom: 5px;">
+                            📅 <strong>Créée le :</strong> ${formatDate(t.createdAt)}
+                        </p>
+                        ${t.completed && t.completedAt ? `
+                            <p style="color: #90C890; font-size: 0.85em;">
+                                ✅ <strong>Accomplie le :</strong> ${formatDate(t.completedAt)}
+                            </p>
+                        ` : ''}
+                    </div>
                     <div class="item-actions">
                         <button class="btn-small btn-done" onclick="toggleTask(${t.id})">
                             ${t.completed ? '↩️ Réactiver' : '✅ Terminer'}
