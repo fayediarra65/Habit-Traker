@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracker Avancé Complet</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -227,62 +225,70 @@
             color: white;
         }
         .rewards-points { font-size: 4em; font-weight: bold; margin: 20px 0; }
-        .calendar-view {
+        
+        .report-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .report-stat {
             background: white;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(139, 90, 69, 0.1);
+            text-align: center;
+            border-top: 4px solid #C9A58C;
+            box-shadow: 0 2px 8px rgba(139, 90, 69, 0.1);
         }
-        .calendar-header {
+        
+        .report-stat .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #8B5A45;
+            margin-bottom: 5px;
+        }
+        
+        .report-stat .label {
+            color: #6B4532;
+            font-size: 0.9em;
+        }
+        
+        .report-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 5px solid #C9A58C;
+            box-shadow: 0 2px 8px rgba(139, 90, 69, 0.1);
+        }
+        
+        .report-section h3 {
+            color: #8B5A45;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .report-item {
+            padding: 12px;
+            background: #FFF8F3;
+            border-radius: 8px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
         }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-        }
-        .calendar-day-header {
-            text-align: center;
-            font-weight: bold;
-            color: #C9A58C;
-            padding: 10px;
-        }
-        .calendar-day {
-            min-height: 100px;
-            border: 2px solid #E8D5C4;
-            border-radius: 8px;
-            padding: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            background: white;
-        }
-        .calendar-day:hover { border-color: #C9A58C; background: #FFF8F3; }
-        .calendar-day.has-items { background: linear-gradient(135deg, #E8D5C420 0%, #C9A58C20 100%); }
-        .day-number {
-            font-weight: bold;
-            margin-bottom: 5px;
+        
+        .report-item .item-name {
+            font-weight: 600;
             color: #6B4532;
         }
-        .day-items {
-            font-size: 0.75em;
-            color: #8B5A45;
+        
+        .report-item .item-stat {
+            color: #C9A58C;
+            font-weight: bold;
         }
-        .day-items div {
-            margin: 2px 0;
-            padding: 2px 5px;
-            background: #C9A58C;
-            color: white;
-            border-radius: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        
         .charts-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -303,7 +309,6 @@
         @media (max-width: 768px) {
             .form-row { grid-template-columns: 1fr; }
             .charts-row { grid-template-columns: 1fr; }
-            .calendar-grid { grid-template-columns: repeat(4, 1fr); }
         }
     </style>
 </head>
@@ -318,8 +323,8 @@
             <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
             <button class="tab" onclick="switchTab('habits')">✨ Habitudes</button>
             <button class="tab" onclick="switchTab('tasks')">📋 Tâches</button>
-            <button class="tab" onclick="switchTab('calendar')">📅 Calendrier</button>
             <button class="tab" onclick="switchTab('goals')">🎯 Objectifs</button>
+            <button class="tab" onclick="switchTab('reports')">📈 Bilans Hebdo</button>
             <button class="tab" onclick="switchTab('rewards')">🏆 Récompenses</button>
         </div>
 
@@ -342,11 +347,6 @@
                     <div class="number" id="streak">0</div>
                     <div class="label">🔥 Série (jours)</div>
                 </div>
-            </div>
-
-            <div style="text-align: center; margin-bottom: 20px;">
-                <button class="btn-primary" onclick="exportPDF()">📤 Exporter rapport PDF</button>
-                <button class="btn-primary" onclick="requestNotificationPermission()">🔔 Activer notifications</button>
             </div>
 
             <div class="charts-row">
@@ -377,16 +377,6 @@
                             <option value="weekly">2-3x par semaine</option>
                             <option value="temporary">Temporaire (période)</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label>⏰ Rappel</label>
-                        <input type="time" id="habitReminder" class="form-input">
-                    </div>
-                </div>
-                <div class="form-row" id="tempDates" style="display: none;">
-                    <div class="form-group">
-                        <label>Date de fin</label>
-                        <input type="date" id="habitEndDate" class="form-input">
                     </div>
                 </div>
                 <button class="btn-primary" id="habitSubmitBtn" onclick="addHabit()">✨ Ajouter</button>
@@ -422,21 +412,11 @@
                     <div class="form-group">
                         <label>Priorité *</label>
                         <select id="taskPriority" class="form-select">
-                            <option value="urgent">🔴 Urgent (aujourd'hui)</option>
-                            <option value="important">🟡 Important (semaine)</option>
+                            <option value="urgent">🔴 Urgent</option>
+                            <option value="important">🟡 Important</option>
                             <option value="normal">🟢 Normal</option>
-                            <option value="later">🔵 Plus tard (2-3 sem)</option>
+                            <option value="later">🔵 Plus tard</option>
                         </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>⏰ Date limite</label>
-                        <input type="date" id="taskDeadline" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label>⏰ Rappel</label>
-                        <input type="datetime-local" id="taskReminder" class="form-input">
                     </div>
                 </div>
                 <div class="form-group">
@@ -457,31 +437,10 @@
             <div class="items-grid" id="tasksList"></div>
         </div>
 
-        <!-- CALENDRIER -->
-        <div id="calendar" class="tab-content">
-            <div class="calendar-view">
-                <div class="calendar-header">
-                    <button class="btn-primary" onclick="changeMonth(-1)">◀ Précédent</button>
-                    <h2 style="color: #f8a5c2;" id="calendarMonth">Décembre 2024</h2>
-                    <button class="btn-primary" onclick="changeMonth(1)">Suivant ▶</button>
-                </div>
-                <div class="calendar-grid">
-                    <div class="calendar-day-header">Lun</div>
-                    <div class="calendar-day-header">Mar</div>
-                    <div class="calendar-day-header">Mer</div>
-                    <div class="calendar-day-header">Jeu</div>
-                    <div class="calendar-day-header">Ven</div>
-                    <div class="calendar-day-header">Sam</div>
-                    <div class="calendar-day-header">Dim</div>
-                </div>
-                <div class="calendar-grid" id="calendarGrid"></div>
-            </div>
-        </div>
-
         <!-- OBJECTIFS -->
         <div id="goals" class="tab-content">
             <div class="add-section">
-                <h3 id="goalFormTitle">🎯 Ajouter un objectif à long terme</h3>
+                <h3 id="goalFormTitle">🎯 Ajouter un objectif</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Objectif *</label>
@@ -497,10 +456,6 @@
                             <option value="personal">🌟 Personnel</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>📅 Date limite</label>
-                        <input type="date" id="goalDeadline" class="form-input">
-                    </div>
                 </div>
                 <div class="form-group">
                     <label>Description</label>
@@ -511,6 +466,21 @@
             </div>
 
             <div class="items-grid" id="goalsList"></div>
+        </div>
+
+        <!-- BILANS HEBDOMADAIRES -->
+        <div id="reports" class="tab-content">
+            <div class="add-section">
+                <h3>📈 Bilans Hebdomadaires (Lundi-Dimanche)</h3>
+                <div class="form-group">
+                    <label>Sélectionner une semaine</label>
+                    <select id="weekSelector" class="form-select" onchange="renderWeeklyReport()" style="font-size: 1.1em;">
+                        <option value="">Choisir une semaine...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="weeklyReportContent"></div>
         </div>
 
         <!-- RÉCOMPENSES -->
@@ -539,20 +509,28 @@
             editingType: null, 
             history: [] 
         };
-        let currentMonth = new Date();
         let charts = {};
 
-        function loadData() {
-            const saved = localStorage.getItem('tracker_advanced_v2');
-            if (saved) {
-                data = JSON.parse(saved);
-                render();
-                updateCharts();
+        async function loadData() {
+            try {
+                const result = await window.storage.get('tracker_advanced');
+                if (result && result.value) {
+                    data = JSON.parse(result.value);
+                }
+            } catch (error) {
+                console.log('Première utilisation');
             }
+            populateWeekSelector();
+            render();
+            updateCharts();
         }
 
-        function saveData() {
-            localStorage.setItem('tracker_advanced_v2', JSON.stringify(data));
+        async function saveData() {
+            try {
+                await window.storage.set('tracker_advanced', JSON.stringify(data));
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
         }
 
         function switchTab(tab) {
@@ -560,12 +538,197 @@
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             event.target.classList.add('active');
             document.getElementById(tab).classList.add('active');
-            if (tab === 'calendar') renderCalendar();
         }
 
-        document.getElementById('habitType').addEventListener('change', (e) => {
-            document.getElementById('tempDates').style.display = e.target.value === 'temporary' ? 'grid' : 'none';
-        });
+        // BILANS HEBDOMADAIRES
+        function getWeekRange(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(d.setDate(diff));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            
+            return {
+                start: monday.toISOString().split('T')[0],
+                end: sunday.toISOString().split('T')[0],
+                monday: new Date(monday),
+                sunday: new Date(sunday)
+            };
+        }
+
+        function getAllWeeks() {
+            const weeks = [];
+            const now = new Date();
+            
+            for (let i = 0; i < 12; i++) {
+                const d = new Date(now);
+                d.setDate(d.getDate() - (i * 7));
+                const week = getWeekRange(d);
+                weeks.push(week);
+            }
+            
+            return weeks;
+        }
+
+        function populateWeekSelector() {
+            const selector = document.getElementById('weekSelector');
+            const weeks = getAllWeeks();
+            
+            selector.innerHTML = '<option value="">Choisir une semaine...</option>';
+            
+            weeks.forEach((week, idx) => {
+                const option = document.createElement('option');
+                option.value = week.start;
+                const label = `Semaine ${idx === 0 ? 'actuelle' : `il y a ${idx} semaine${idx > 1 ? 's' : ''}`} : ${week.monday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - ${week.sunday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
+                option.textContent = label;
+                selector.appendChild(option);
+            });
+        }
+
+        function renderWeeklyReport() {
+            const selector = document.getElementById('weekSelector');
+            const startDate = selector.value;
+            
+            if (!startDate) {
+                document.getElementById('weeklyReportContent').innerHTML = '';
+                return;
+            }
+            
+            const week = getWeekRange(new Date(startDate));
+            const container = document.getElementById('weeklyReportContent');
+            
+            const weekDays = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(week.monday);
+                d.setDate(d.getDate() + i);
+                weekDays.push(d.toISOString().split('T')[0]);
+            }
+            
+            // Stats habitudes
+            let habitsStats = {
+                daily: { total: 0, completed: 0 },
+                weekly: { total: 0, completed: 0 },
+                temporary: { total: 0, completed: 0 }
+            };
+            
+            data.habits.forEach(h => {
+                habitsStats[h.type].total++;
+                const completedInWeek = weekDays.filter(d => h.days.includes(d)).length;
+                if (completedInWeek > 0) habitsStats[h.type].completed++;
+            });
+            
+            // Stats tâches par type et priorité
+            const tasksWork = data.tasks.filter(t => t.type === 'work');
+            const tasksPersonal = data.tasks.filter(t => t.type === 'personal');
+            const tasksWorkCompleted = tasksWork.filter(t => t.completed).length;
+            const tasksPersonalCompleted = tasksPersonal.filter(t => t.completed).length;
+            
+            const tasksByPriority = {
+                urgent: data.tasks.filter(t => t.priority === 'urgent'),
+                important: data.tasks.filter(t => t.priority === 'important'),
+                normal: data.tasks.filter(t => t.priority === 'normal'),
+                later: data.tasks.filter(t => t.priority === 'later')
+            };
+            
+            // Stats objectifs
+            const goalsCompleted = data.goals.filter(g => g.completed).length;
+            const goalsTotal = data.goals.length;
+            
+            container.innerHTML = `
+                <div class="report-summary">
+                    <div class="report-stat">
+                        <div class="number">${data.points || 0}</div>
+                        <div class="label">🏆 Points totaux</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="number">${data.habits.length}</div>
+                        <div class="label">✨ Habitudes actives</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="number">${data.tasks.filter(t => t.completed).length}/${data.tasks.length}</div>
+                        <div class="label">📋 Tâches terminées</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="number">${goalsCompleted}/${goalsTotal}</div>
+                        <div class="label">🎯 Objectifs atteints</div>
+                    </div>
+                </div>
+
+                <div class="report-section">
+                    <h3>✨ Habitudes par fréquence</h3>
+                    <div class="report-item">
+                        <span class="item-name">📅 Quotidiennes</span>
+                        <span class="item-stat">${habitsStats.daily.completed}/${habitsStats.daily.total} actives cette semaine</span>
+                    </div>
+                    <div class="report-item">
+                        <span class="item-name">📆 Hebdomadaires (2-3x)</span>
+                        <span class="item-stat">${habitsStats.weekly.completed}/${habitsStats.weekly.total} actives cette semaine</span>
+                    </div>
+                    <div class="report-item">
+                        <span class="item-name">⏳ Temporaires</span>
+                        <span class="item-stat">${habitsStats.temporary.completed}/${habitsStats.temporary.total} actives cette semaine</span>
+                    </div>
+                </div>
+
+                <div class="report-section">
+                    <h3>📋 Tâches par domaine</h3>
+                    <div class="report-item">
+                        <span class="item-name">💼 Professionnel</span>
+                        <span class="item-stat">${tasksWorkCompleted}/${tasksWork.length} terminées</span>
+                    </div>
+                    <div class="report-item">
+                        <span class="item-name">🏠 Personnel</span>
+                        <span class="item-stat">${tasksPersonalCompleted}/${tasksPersonal.length} terminées</span>
+                    </div>
+                </div>
+
+                <div class="report-section">
+                    <h3>🎯 Tâches par priorité</h3>
+                    ${Object.keys(tasksByPriority).map(priority => {
+                        const tasks = tasksByPriority[priority];
+                        const completed = tasks.filter(t => t.completed).length;
+                        const icon = priority === 'urgent' ? '🔴' : priority === 'important' ? '🟡' : priority === 'normal' ? '🟢' : '🔵';
+                        const label = priority === 'urgent' ? 'Urgentes' : priority === 'important' ? 'Importantes' : priority === 'normal' ? 'Normales' : 'Plus tard';
+                        return `
+                            <div class="report-item">
+                                <span class="item-name">${icon} ${label}</span>
+                                <span class="item-stat">${completed}/${tasks.length} terminées</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+
+                <div class="report-section">
+                    <h3>📋 Détail des habitudes</h3>
+                    ${data.habits.length > 0 ? data.habits.map(h => {
+                        const completedInWeek = weekDays.filter(d => h.days.includes(d)).length;
+                        return `
+                            <div class="report-item">
+                                <span class="item-name">${h.name}</span>
+                                <span class="item-stat">${completedInWeek}/7 jours cette semaine</span>
+                            </div>
+                        `;
+                    }).join('') : '<p style="text-align: center; color: #A0826D; padding: 20px;">Aucune habitude</p>'}
+                </div>
+
+                <div class="report-section">
+                    <h3>📊 Récapitulatif</h3>
+                    <div class="report-item">
+                        <span class="item-name">Taux de complétion tâches</span>
+                        <span class="item-stat">${data.tasks.length > 0 ? Math.round((data.tasks.filter(t => t.completed).length / data.tasks.length) * 100) : 0}%</span>
+                    </div>
+                    <div class="report-item">
+                        <span class="item-name">Taux de complétion objectifs</span>
+                        <span class="item-stat">${goalsTotal > 0 ? Math.round((goalsCompleted / goalsTotal) * 100) : 0}%</span>
+                    </div>
+                    <div class="report-item">
+                        <span class="item-name">Série actuelle</span>
+                        <span class="item-stat">🔥 ${calculateStreak()} jours</span>
+                    </div>
+                </div>
+            `;
+        }
 
         // === HABITUDES ===
         function addHabit() {
@@ -576,8 +739,6 @@
                 const habit = data.habits.find(h => h.id === data.editingId);
                 habit.name = name;
                 habit.type = document.getElementById('habitType').value;
-                habit.endDate = document.getElementById('habitEndDate').value || null;
-                habit.reminder = document.getElementById('habitReminder').value || null;
                 showNotif('✏️ Habitude modifiée !');
                 cancelEditHabit();
             } else {
@@ -585,8 +746,6 @@
                     id: Date.now(),
                     name,
                     type: document.getElementById('habitType').value,
-                    endDate: document.getElementById('habitEndDate').value || null,
-                    reminder: document.getElementById('habitReminder').value || null,
                     days: [],
                     completed: 0,
                     createdAt: new Date().toISOString()
@@ -595,8 +754,6 @@
             }
 
             document.getElementById('habitName').value = '';
-            document.getElementById('habitEndDate').value = '';
-            document.getElementById('habitReminder').value = '';
             saveData();
             render();
         }
@@ -608,23 +765,16 @@
             
             document.getElementById('habitName').value = habit.name;
             document.getElementById('habitType').value = habit.type;
-            document.getElementById('habitEndDate').value = habit.endDate || '';
-            document.getElementById('habitReminder').value = habit.reminder || '';
-            document.getElementById('tempDates').style.display = habit.type === 'temporary' ? 'grid' : 'none';
             
             document.getElementById('habitFormTitle').textContent = '✏️ Modifier l\'habitude';
             document.getElementById('habitSubmitBtn').textContent = '💾 Enregistrer';
             document.getElementById('habitCancelBtn').style.display = 'inline-block';
-            
-            document.getElementById('habitName').scrollIntoView({ behavior: 'smooth' });
         }
 
         function cancelEditHabit() {
             data.editingId = null;
             data.editingType = null;
             document.getElementById('habitName').value = '';
-            document.getElementById('habitEndDate').value = '';
-            document.getElementById('habitReminder').value = '';
             document.getElementById('habitFormTitle').textContent = '➕ Ajouter une habitude';
             document.getElementById('habitSubmitBtn').textContent = '✨ Ajouter';
             document.getElementById('habitCancelBtn').style.display = 'none';
@@ -640,8 +790,6 @@
                 task.title = title;
                 task.type = document.getElementById('taskType').value;
                 task.priority = document.getElementById('taskPriority').value;
-                task.deadline = document.getElementById('taskDeadline').value || null;
-                task.reminder = document.getElementById('taskReminder').value || null;
                 task.notes = document.getElementById('taskNotes').value || '';
                 showNotif('✏️ Tâche modifiée !');
                 cancelEditTask();
@@ -651,8 +799,6 @@
                     title,
                     type: document.getElementById('taskType').value,
                     priority: document.getElementById('taskPriority').value,
-                    deadline: document.getElementById('taskDeadline').value || null,
-                    reminder: document.getElementById('taskReminder').value || null,
                     notes: document.getElementById('taskNotes').value || '',
                     completed: false,
                     createdAt: new Date().toISOString()
@@ -661,8 +807,6 @@
             }
 
             document.getElementById('taskTitle').value = '';
-            document.getElementById('taskDeadline').value = '';
-            document.getElementById('taskReminder').value = '';
             document.getElementById('taskNotes').value = '';
             saveData();
             render();
@@ -676,23 +820,17 @@
             document.getElementById('taskTitle').value = task.title;
             document.getElementById('taskType').value = task.type;
             document.getElementById('taskPriority').value = task.priority;
-            document.getElementById('taskDeadline').value = task.deadline || '';
-            document.getElementById('taskReminder').value = task.reminder || '';
             document.getElementById('taskNotes').value = task.notes || '';
             
             document.getElementById('taskFormTitle').textContent = '✏️ Modifier la tâche';
             document.getElementById('taskSubmitBtn').textContent = '💾 Enregistrer';
             document.getElementById('taskCancelBtn').style.display = 'inline-block';
-            
-            document.getElementById('taskTitle').scrollIntoView({ behavior: 'smooth' });
         }
 
         function cancelEditTask() {
             data.editingId = null;
             data.editingType = null;
             document.getElementById('taskTitle').value = '';
-            document.getElementById('taskDeadline').value = '';
-            document.getElementById('taskReminder').value = '';
             document.getElementById('taskNotes').value = '';
             document.getElementById('taskFormTitle').textContent = '➕ Ajouter une tâche';
             document.getElementById('taskSubmitBtn').textContent = '📋 Ajouter';
@@ -708,7 +846,6 @@
                 const goal = data.goals.find(g => g.id === data.editingId);
                 goal.title = title;
                 goal.category = document.getElementById('goalCategory').value;
-                goal.deadline = document.getElementById('goalDeadline').value || null;
                 goal.description = document.getElementById('goalDescription').value || '';
                 showNotif('✏️ Objectif modifié !');
                 cancelEditGoal();
@@ -717,17 +854,14 @@
                     id: Date.now(),
                     title,
                     category: document.getElementById('goalCategory').value,
-                    deadline: document.getElementById('goalDeadline').value || null,
                     description: document.getElementById('goalDescription').value || '',
                     completed: false,
-                    progress: 0,
                     createdAt: new Date().toISOString()
                 });
                 showNotif('🎯 Objectif ajouté !');
             }
 
             document.getElementById('goalTitle').value = '';
-            document.getElementById('goalDeadline').value = '';
             document.getElementById('goalDescription').value = '';
             saveData();
             render();
@@ -740,21 +874,17 @@
             
             document.getElementById('goalTitle').value = goal.title;
             document.getElementById('goalCategory').value = goal.category;
-            document.getElementById('goalDeadline').value = goal.deadline || '';
             document.getElementById('goalDescription').value = goal.description || '';
             
             document.getElementById('goalFormTitle').textContent = '✏️ Modifier l\'objectif';
             document.getElementById('goalSubmitBtn').textContent = '💾 Enregistrer';
             document.getElementById('goalCancelBtn').style.display = 'inline-block';
-            
-            document.getElementById('goalTitle').scrollIntoView({ behavior: 'smooth' });
         }
 
         function cancelEditGoal() {
             data.editingId = null;
             data.editingType = null;
             document.getElementById('goalTitle').value = '';
-            document.getElementById('goalDeadline').value = '';
             document.getElementById('goalDescription').value = '';
             document.getElementById('goalFormTitle').textContent = '🎯 Ajouter un objectif';
             document.getElementById('goalSubmitBtn').textContent = '🎯 Ajouter';
@@ -788,7 +918,6 @@
                 habit.completed++;
                 data.points += 10;
                 showNotif('✨ +10 points !');
-                checkAchievements();
             }
             
             trackHistory('habit', habitId, idx > -1 ? 'unchecked' : 'checked');
@@ -816,7 +945,6 @@
         }
 
         function deleteItem(type, id) {
-            // Déterminer le bon tableau selon le type
             if (type === 'habit') {
                 data.habits = data.habits.filter(item => item.id !== id);
             } else if (type === 'task') {
@@ -825,7 +953,7 @@
                 data.goals = data.goals.filter(item => item.id !== id);
             }
             
-            showNotif('🗑️ Supprimé avec succès !');
+            showNotif('🗑️ Supprimé !');
             saveData();
             render();
             updateCharts();
@@ -879,8 +1007,6 @@
                             h.type === 'weekly' ? 'Hebdo' : 'Temporaire'
                         }</span>
                     </div>
-                    ${h.reminder ? `<p style="color: #666; font-size: 0.9em;">⏰ Rappel : ${h.reminder}</p>` : ''}
-                    ${h.endDate ? `<p style="color: #666; font-size: 0.9em;">📅 Jusqu'au : ${new Date(h.endDate).toLocaleDateString('fr')}</p>` : ''}
                     <div class="item-days">
                         ${weekDays.map((day, i) => `
                             <div class="day-box ${h.days.includes(day) ? 'checked' : ''}" 
@@ -895,7 +1021,7 @@
                         <button class="btn-small btn-delete" onclick="deleteItem('habit', ${h.id})">🗑️ Supprimer</button>
                     </div>
                 </div>
-            `).join('') : '<div class="empty-state">📭 Aucune habitude pour le moment</div>';
+            `).join('') : '<div class="empty-state">📭 Aucune habitude</div>';
 
             // TÂCHES
             document.getElementById('tasksList').innerHTML = filteredTasks.length ? filteredTasks.map(t => `
@@ -909,8 +1035,6 @@
                         }</span>
                     </div>
                     <p style="color: #666; margin: 10px 0;">${t.type === 'work' ? '💼 Pro' : '🏠 Perso'}</p>
-                    ${t.deadline ? `<p style="color: #666;">📅 ${new Date(t.deadline).toLocaleDateString('fr')}</p>` : ''}
-                    ${t.reminder ? `<p style="color: #666;">⏰ ${new Date(t.reminder).toLocaleString('fr')}</p>` : ''}
                     ${t.notes ? `<p style="color: #666; font-style: italic; margin-top: 10px;">${t.notes}</p>` : ''}
                     <div class="item-actions">
                         <button class="btn-small btn-done" onclick="toggleTask(${t.id})">
@@ -920,7 +1044,7 @@
                         <button class="btn-small btn-delete" onclick="deleteItem('task', ${t.id})">🗑️ Supprimer</button>
                     </div>
                 </div>
-            `).join('') : '<div class="empty-state">📭 Aucune tâche pour le moment</div>';
+            `).join('') : '<div class="empty-state">📭 Aucune tâche</div>';
 
             // OBJECTIFS
             document.getElementById('goalsList').innerHTML = filteredGoals.length ? filteredGoals.map(g => `
@@ -934,7 +1058,6 @@
                             g.category === 'finance' ? '💰 Finance' : '🌟 Personnel'
                         }</span>
                     </div>
-                    ${g.deadline ? `<p style="color: #666; margin: 10px 0;">📅 ${new Date(g.deadline).toLocaleDateString('fr')}</p>` : ''}
                     ${g.description ? `<p style="color: #666; font-style: italic;">${g.description}</p>` : ''}
                     <div class="item-actions">
                         <button class="btn-small btn-done" onclick="toggleGoal(${g.id})">
@@ -944,7 +1067,7 @@
                         <button class="btn-small btn-delete" onclick="deleteItem('goal', ${g.id})">🗑️ Supprimer</button>
                     </div>
                 </div>
-            `).join('') : '<div class="empty-state">📭 Aucun objectif pour le moment</div>';
+            `).join('') : '<div class="empty-state">📭 Aucun objectif</div>';
 
             updateStats();
         }
@@ -987,60 +1110,6 @@
             return streak;
         }
 
-        function checkAchievements() {
-            const streak = calculateStreak();
-            if (streak === 7 && data.points >= 50) {
-                data.points += 50;
-                showNotif('🔥 Série de 7 jours ! +50 points bonus');
-            }
-        }
-
-        // CALENDRIER
-        function renderCalendar() {
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth();
-            
-            const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
-                               'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-            document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
-            
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
-            
-            const grid = document.getElementById('calendarGrid');
-            grid.innerHTML = '';
-            
-            for (let i = 0; i < adjustedFirstDay; i++) {
-                grid.innerHTML += '<div class="calendar-day" style="opacity: 0.3;"></div>';
-            }
-            
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const habitsOnDay = data.habits.filter(h => h.days.includes(dateStr));
-                const tasksOnDay = data.tasks.filter(t => t.deadline === dateStr);
-                
-                const hasItems = habitsOnDay.length > 0 || tasksOnDay.length > 0;
-                
-                grid.innerHTML += `
-                    <div class="calendar-day ${hasItems ? 'has-items' : ''}">
-                        <div class="day-number">${day}</div>
-                        <div class="day-items">
-                            ${habitsOnDay.slice(0, 2).map(h => `<div>✨ ${h.name.substring(0, 15)}...</div>`).join('')}
-                            ${tasksOnDay.slice(0, 2).map(t => `<div>📋 ${t.title.substring(0, 15)}...</div>`).join('')}
-                            ${(habitsOnDay.length + tasksOnDay.length > 2) ? `<div>+${habitsOnDay.length + tasksOnDay.length - 2} autre(s)</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        function changeMonth(direction) {
-            currentMonth.setMonth(currentMonth.getMonth() + direction);
-            renderCalendar();
-        }
-
-        // GRAPHIQUES
         function updateCharts() {
             const last7Days = [];
             for (let i = 6; i >= 0; i--) {
@@ -1066,14 +1135,14 @@
                     datasets: [{
                         label: 'Habitudes',
                         data: habitsData,
-                        borderColor: '#f8a5c2',
-                        backgroundColor: 'rgba(248, 165, 194, 0.1)',
+                        borderColor: '#C9A58C',
+                        backgroundColor: 'rgba(201, 165, 140, 0.1)',
                         tension: 0.4
                     }, {
                         label: 'Tâches',
                         data: tasksData,
-                        borderColor: '#a6c1ee',
-                        backgroundColor: 'rgba(166, 193, 238, 0.1)',
+                        borderColor: '#B8967E',
+                        backgroundColor: 'rgba(184, 150, 126, 0.1)',
                         tension: 0.4
                     }]
                 },
@@ -1096,77 +1165,12 @@
                     labels: ['Urgentes', 'Importantes', 'Normales', 'Plus tard'],
                     datasets: [{
                         data: [urgentTasks, importantTasks, normalTasks, laterTasks],
-                        backgroundColor: ['#ff6b6b', '#ffd93d', '#6bcf7f', '#a6c1ee']
+                        backgroundColor: ['#D98880', '#E8C4A0', '#90C890', '#C4D5E8']
                     }]
                 },
                 options: { responsive: true }
             });
         }
-
-        // NOTIFICATIONS
-        function requestNotificationPermission() {
-            if ('Notification' in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        showNotif('🔔 Notifications activées !');
-                    } else {
-                        showNotif('⚠️ Notifications refusées');
-                    }
-                });
-            }
-        }
-
-        function checkReminders() {
-            const now = new Date();
-            const nowStr = now.toISOString().substring(0, 16);
-            
-            data.habits.forEach(h => {
-                if (h.reminder) {
-                    const [hours, minutes] = h.reminder.split(':');
-                    if (now.getHours() == hours && now.getMinutes() == minutes) {
-                        showNotif(`⏰ Rappel : ${h.name}`);
-                        if ('Notification' in window && Notification.permission === 'granted') {
-                            new Notification('Rappel Habitude', { body: h.name, icon: '✨' });
-                        }
-                    }
-                }
-            });
-            
-            data.tasks.forEach(t => {
-                if (t.reminder && t.reminder === nowStr) {
-                    showNotif(`⏰ Rappel : ${t.title}`);
-                    if ('Notification' in window && Notification.permission === 'granted') {
-                        new Notification('Rappel Tâche', { body: t.title, icon: '📋' });
-                    }
-                }
-            });
-        }
-
-async function exportPDF() {
-    const container = document.querySelector('.container'); // ton contenu complet
-    const canvas = await html2canvas(container, { scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    let heightLeft = pdfHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-    heightLeft -= pdf.internal.pageSize.getHeight();
-
-    while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
-    }
-
-    pdf.save('rapport.pdf');
-}
 
         function showNotif(msg) {
             const notif = document.createElement('div');
@@ -1176,12 +1180,7 @@ async function exportPDF() {
             setTimeout(() => notif.remove(), 3000);
         }
 
-        setInterval(checkReminders, 60000);
         loadData();
-        render();
-        updateCharts();
     </script>
 </body>
 </html>
-
-
