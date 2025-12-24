@@ -68,6 +68,12 @@
             color: white;
             text-align: center;
         }
+        .stat-card.habits-card {
+            background: linear-gradient(135deg, #74B9FF 0%, #5DADE2 100%);
+        }
+        .stat-card.tasks-card {
+            background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
+        }
         .stat-card .number { font-size: 2.5em; font-weight: bold; }
         .stat-card .label { font-size: 0.9em; opacity: 0.9; margin-top: 5px; }
         .add-section {
@@ -147,24 +153,63 @@
             flex-wrap: wrap;
         }
         .day-box {
-            width: 40px;
-            height: 40px;
+            min-width: 60px;
+            height: 50px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             border: 2px solid #C9A58C;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.85em;
+            font-size: 0.75em;
             transition: all 0.2s;
             background: white;
+            padding: 5px;
         }
-        .day-box.checked {
-            background: linear-gradient(135deg, #C9A58C 0%, #B8967E 100%);
-            color: white;
+        .day-box .day-letter {
+            font-size: 0.9em;
+            opacity: 0.7;
         }
-        .day-box:hover { transform: scale(1.1); }
+        .day-box .day-date {
+            font-size: 1.1em;
+            margin-top: 2px;
+        }
+        .month-section {
+            background: #FFF8F3;
+            border: 2px solid #E8D5C4;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .month-header {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #E8D5C4 0%, #D9C4B5 100%);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: #6B4532;
+            transition: all 0.3s;
+        }
+        .month-header:hover {
+            background: linear-gradient(135deg, #D9C4B5 0%, #C9B4A5 100%);
+        }
+        .month-toggle {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+        .month-section.collapsed .month-toggle {
+            transform: rotate(-90deg);
+        }
+        .month-section.collapsed .month-content {
+            display: none;
+        }
+        .month-content {
+            padding: 15px;
+        }
         .item-actions { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
         .btn-small {
             padding: 8px 15px;
@@ -335,11 +380,11 @@
                     <div class="number" id="totalPoints">0</div>
                     <div class="label">🏆 Points</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card habits-card">
                     <div class="number" id="habitsCompleted">0/0</div>
                     <div class="label">✨ Habitudes aujourd'hui</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card tasks-card">
                     <div class="number" id="tasksCompleted">0/0</div>
                     <div class="label">📋 Tâches terminées</div>
                 </div>
@@ -507,30 +552,167 @@
             filter: 'all', 
             editingId: null, 
             editingType: null, 
-            history: [] 
+            history: [],
+            habitView: 'week' // 'week' ou 'history'
         };
         let charts = {};
 
+        function toggleHabitView(view) {
+            data.habitView = view;
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            render();
+        }
+
+        function toggleMonth(element) {
+            element.closest('.month-section').classList.toggle('collapsed');
+        }
+
+        function getMonthsFromHabits() {
+            const months = new Set();
+            data.habits.forEach(habit => {
+                habit.days.forEach(day => {
+                    const date = new Date(day);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    months.add(monthKey);
+                });
+            });
+            return Array.from(months).sort().reverse();
+        }
+
+        function getMonthName(monthKey) {
+            const [year, month] = monthKey.split('-');
+            const date = new Date(year, parseInt(month) - 1);
+            const monthNames = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+            return `${monthNames[date.getMonth()]} ${year}`;
+        }
+
+        function getDaysInMonth(monthKey) {
+            const [year, month] = monthKey.split('-');
+            const firstDay = new Date(year, parseInt(month) - 1, 1);
+            const lastDay = new Date(year, parseInt(month), 0);
+            const days = [];
+            
+            for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+                days.push(new Date(d).toISOString().split('T')[0]);
+            }
+            
+            return days;
+        }
+
+        function formatDayBox(dateStr) {
+            const date = new Date(dateStr);
+            const dayNames = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+            const dayLetter = dayNames[date.getDay()];
+            const dayNumber = date.getDate();
+            
+            return { letter: dayLetter, number: dayNumber };
+        }
+
         async function loadData() {
+            // Essai 1 : window.storage (stockage persistant Claude)
             try {
                 const result = await window.storage.get('tracker_advanced');
                 if (result && result.value) {
-                    data = JSON.parse(result.value);
+                    const loaded = JSON.parse(result.value);
+                    data = {
+                        habits: loaded.habits || [],
+                        tasks: loaded.tasks || [],
+                        goals: loaded.goals || [],
+                        points: loaded.points || 0,
+                        streak: loaded.streak || 0,
+                        filter: loaded.filter || 'all',
+                        editingId: null,
+                        editingType: null,
+                        history: loaded.history || []
+                    };
+                    console.log('✅ Données chargées depuis window.storage');
+                    populateWeekSelector();
+                    render();
+                    updateCharts();
+                    return;
                 }
             } catch (error) {
-                console.log('Première utilisation');
+                console.warn('⚠️ window.storage non disponible:', error);
             }
+
+            // Essai 2 : localStorage (stockage navigateur)
+            try {
+                const localData = localStorage.getItem('tracker_advanced');
+                if (localData) {
+                    const loaded = JSON.parse(localData);
+                    data = {
+                        habits: loaded.habits || [],
+                        tasks: loaded.tasks || [],
+                        goals: loaded.goals || [],
+                        points: loaded.points || 0,
+                        streak: loaded.streak || 0,
+                        filter: loaded.filter || 'all',
+                        editingId: null,
+                        editingType: null,
+                        history: loaded.history || []
+                    };
+                    console.log('✅ Données chargées depuis localStorage');
+                    populateWeekSelector();
+                    render();
+                    updateCharts();
+                    return;
+                }
+            } catch (error) {
+                console.warn('⚠️ localStorage non disponible:', error);
+            }
+
+            // Initialisation par défaut
+            console.log('📦 Première utilisation - données vierges');
             populateWeekSelector();
             render();
             updateCharts();
         }
 
         async function saveData() {
+            const dataToSave = {
+                habits: data.habits,
+                tasks: data.tasks,
+                goals: data.goals,
+                points: data.points,
+                streak: data.streak,
+                filter: data.filter,
+                history: data.history,
+                lastSaved: new Date().toISOString()
+            };
+            const jsonData = JSON.stringify(dataToSave);
+            
+            let savedToCloud = false;
+            let savedToLocal = false;
+
+            // Sauvegarde 1 : window.storage (prioritaire)
             try {
-                await window.storage.set('tracker_advanced', JSON.stringify(data));
+                const result = await window.storage.set('tracker_advanced', jsonData);
+                if (result) {
+                    savedToCloud = true;
+                    console.log('💾 Sauvegardé dans window.storage');
+                }
             } catch (error) {
-                console.error('Erreur:', error);
+                console.warn('⚠️ Échec window.storage:', error);
             }
+
+            // Sauvegarde 2 : localStorage (backup)
+            try {
+                localStorage.setItem('tracker_advanced', jsonData);
+                savedToLocal = true;
+                console.log('💾 Sauvegardé dans localStorage');
+            } catch (error) {
+                console.warn('⚠️ Échec localStorage:', error);
+            }
+
+            // Notification silencieuse
+            if (!savedToCloud && !savedToLocal) {
+                console.error('❌ ÉCHEC DE SAUVEGARDE CRITIQUE');
+                showNotif('⚠️ Échec de sauvegarde !');
+                return false;
+            }
+            
+            return true;
         }
 
         function switchTab(tab) {
@@ -730,7 +912,6 @@
             `;
         }
 
-        // === HABITUDES ===
         function addHabit() {
             const name = document.getElementById('habitName').value.trim();
             if (!name) return showNotif('⚠️ Entrez un nom');
@@ -742,20 +923,27 @@
                 showNotif('✏️ Habitude modifiée !');
                 cancelEditHabit();
             } else {
-                data.habits.push({
+                const newHabit = {
                     id: Date.now(),
                     name,
                     type: document.getElementById('habitType').value,
                     days: [],
                     completed: 0,
                     createdAt: new Date().toISOString()
-                });
+                };
+                data.habits.push(newHabit);
+                console.log('✨ Nouvelle habitude ajoutée:', newHabit);
                 showNotif('✨ Habitude ajoutée !');
             }
 
             document.getElementById('habitName').value = '';
-            saveData();
-            render();
+            
+            // Sauvegarder et afficher immédiatement
+            saveData().then(() => {
+                console.log('💾 Habitude sauvegardée, affichage...');
+                render();
+                updateCharts();
+            });
         }
 
         function editHabit(id) {
@@ -906,24 +1094,43 @@
 
         function toggleDay(habitId, day) {
             const habit = data.habits.find(h => h.id === habitId);
+            if (!habit) {
+                console.error('Habitude non trouvée:', habitId);
+                return;
+            }
+            
+            if (!habit.days) {
+                habit.days = [];
+            }
+            
             const idx = habit.days.indexOf(day);
             
             if (idx > -1) {
+                // Décocher
                 habit.days.splice(idx, 1);
-                habit.completed--;
-                data.points -= 10;
+                if (habit.completed > 0) habit.completed--;
+                data.points = Math.max(0, data.points - 10);
+                console.log('✅ Jour décoché:', day, 'Points:', data.points);
                 showNotif('↩️ -10 points');
             } else {
+                // Cocher
                 habit.days.push(day);
-                habit.completed++;
+                habit.completed = (habit.completed || 0) + 1;
                 data.points += 10;
+                console.log('✅ Jour coché:', day, 'Points:', data.points);
                 showNotif('✨ +10 points !');
             }
             
             trackHistory('habit', habitId, idx > -1 ? 'unchecked' : 'checked');
+            
+            // Sauvegarder PUIS rafraîchir
             saveData();
-            render();
-            updateCharts();
+            
+            // Rafraîchissement IMMÉDIAT sans attendre
+            setTimeout(() => {
+                render();
+                updateCharts();
+            }, 10);
         }
 
         function toggleTask(id) {
@@ -1004,7 +1211,6 @@
 
         function render() {
             const weekDays = getWeekDays();
-            const dayNames = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
             let filteredHabits = data.habits;
             let filteredTasks = data.tasks;
@@ -1015,35 +1221,115 @@
                 filteredTasks = data.tasks.filter(t => t.priority === data.filter || t.type === data.filter);
             }
 
-            // HABITUDES
-            document.getElementById('habitsList').innerHTML = filteredHabits.length ? filteredHabits.map(h => `
-                <div class="item-card">
-                    <div class="item-header">
-                        <div class="item-title">${h.name}</div>
-                        <span class="item-badge badge-${h.type}">${
-                            h.type === 'daily' ? 'Quotidienne' :
-                            h.type === 'weekly' ? 'Hebdo' : 'Temporaire'
-                        }</span>
-                    </div>
-                    <div class="item-days">
-                        ${weekDays.map((day, i) => `
-                            <div class="day-box ${h.days.includes(day) ? 'checked' : ''}" 
+            // HABITUDES avec vue semaine ou historique
+            if (data.habitView === 'week') {
+                // Vue semaine actuelle
+                const habitsHTML = filteredHabits.length ? filteredHabits.map(h => {
+                    const dayBoxes = weekDays.map(day => {
+                        const { letter, number } = formatDayBox(day);
+                        const isChecked = h.days && h.days.includes(day);
+                        const checkedStyle = isChecked ? 
+                            'background: linear-gradient(135deg, #74B9FF 0%, #5DADE2 100%); color: white; border-color: #74B9FF; box-shadow: 0 2px 8px rgba(116, 185, 255, 0.4);' : 
+                            'background: white; color: #333;';
+                        return `
+                            <div class="day-box ${isChecked ? 'checked' : ''}" 
+                                 style="min-width: 60px; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid ${isChecked ? '#74B9FF' : '#C9A58C'}; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.75em; transition: all 0.2s; padding: 5px; ${checkedStyle}"
                                  onclick="toggleDay(${h.id}, '${day}')">
-                                ${dayNames[i]}
+                                <div class="day-letter" style="font-size: 0.9em; opacity: ${isChecked ? '1' : '0.7'};">${letter}</div>
+                                <div class="day-date" style="font-size: 1.1em; margin-top: 2px;">${number}</div>
                             </div>
-                        `).join('')}
+                        `;
+                    }).join('');
+                    
+                    return `
+                        <div class="item-card habit-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(139, 90, 69, 0.1); border-left: 5px solid #74B9FF; margin-bottom: 15px;">
+                            <div class="item-header">
+                                <div class="item-title">${h.name}</div>
+                                <span class="item-badge badge-${h.type}">${
+                                    h.type === 'daily' ? 'Quotidienne' :
+                                    h.type === 'weekly' ? 'Hebdo' : 'Temporaire'
+                                }</span>
+                            </div>
+                            <div class="item-days" style="display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap;">
+                                ${dayBoxes}
+                            </div>
+                            <p style="color: #666; margin-top: 10px;">✅ ${h.completed || 0} fois complétée</p>
+                            <div class="item-actions">
+                                <button class="btn-small btn-edit" onclick="editHabit(${h.id})">✏️ Modifier</button>
+                                <button class="btn-small btn-delete" onclick="deleteItem('habit', ${h.id})">🗑️ Supprimer</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('') : '<div class="empty-state">📭 Aucune habitude</div>';
+                
+                document.getElementById('habitsList').innerHTML = `
+                    <div class="view-toggle">
+                        <button class="view-btn active" onclick="toggleHabitView('week')">📅 Semaine actuelle</button>
+                        <button class="view-btn" onclick="toggleHabitView('history')">📚 Historique</button>
                     </div>
-                    <p style="color: #666; margin-top: 10px;">✅ ${h.completed || 0} fois complétée</p>
-                    <div class="item-actions">
-                        <button class="btn-small btn-edit" onclick="editHabit(${h.id})">✏️ Modifier</button>
-                        <button class="btn-small btn-delete" onclick="deleteItem('habit', ${h.id})">🗑️ Supprimer</button>
+                    ${habitsHTML}
+                `;
+            } else {
+                // Vue historique par mois
+                const months = getMonthsFromHabits();
+                
+                const historyHTML = months.length > 0 ? months.map(monthKey => {
+                    const monthDays = getDaysInMonth(monthKey);
+                    
+                    return filteredHabits.map(h => {
+                        const daysInThisMonth = h.days ? h.days.filter(d => d.startsWith(monthKey)) : [];
+                        
+                        if (daysInThisMonth.length === 0) return '';
+                        
+                        const dayBoxes = monthDays.map(day => {
+                            const { letter, number } = formatDayBox(day);
+                            const isChecked = h.days && h.days.includes(day);
+                            const checkedStyle = isChecked ? 
+                                'background: linear-gradient(135deg, #74B9FF 0%, #5DADE2 100%); color: white; border-color: #74B9FF; box-shadow: 0 2px 8px rgba(116, 185, 255, 0.4);' : 
+                                'background: white; color: #333;';
+                            return `
+                                <div class="day-box ${isChecked ? 'checked' : ''}" 
+                                     style="min-width: 60px; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid ${isChecked ? '#74B9FF' : '#C9A58C'}; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.75em; transition: all 0.2s; padding: 5px; ${checkedStyle}"
+                                     onclick="toggleDay(${h.id}, '${day}')">
+                                    <div class="day-letter" style="font-size: 0.9em; opacity: ${isChecked ? '1' : '0.7'};">${letter}</div>
+                                    <div class="day-date" style="font-size: 1.1em; margin-top: 2px;">${number}</div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        return `
+                            <div class="month-section">
+                                <div class="month-header" onclick="toggleMonth(this)">
+                                    <div>
+                                        <strong>${h.name}</strong> - ${getMonthName(monthKey)}
+                                        <span style="margin-left: 15px; color: #81C784; font-size: 0.9em;">
+                                            ✅ ${daysInThisMonth.length} jours
+                                        </span>
+                                    </div>
+                                    <span class="month-toggle">▼</span>
+                                </div>
+                                <div class="month-content">
+                                    <div class="item-days" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                        ${dayBoxes}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }).join('') : '<div class="empty-state">📭 Aucun historique</div>';
+                
+                document.getElementById('habitsList').innerHTML = `
+                    <div class="view-toggle">
+                        <button class="view-btn" onclick="toggleHabitView('week')">📅 Semaine actuelle</button>
+                        <button class="view-btn active" onclick="toggleHabitView('history')">📚 Historique</button>
                     </div>
-                </div>
-            `).join('') : '<div class="empty-state">📭 Aucune habitude</div>';
+                    ${historyHTML}
+                `;
+            }
 
             // TÂCHES
             document.getElementById('tasksList').innerHTML = filteredTasks.length ? filteredTasks.map(t => `
-                <div class="item-card" style="${t.completed ? 'opacity: 0.6;' : ''}">
+                <div class="item-card task-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(139, 90, 69, 0.1); border-left: 5px solid #81C784; margin-bottom: 15px; ${t.completed ? 'opacity: 0.6;' : ''}">
                     <div class="item-header">
                         <div class="item-title" style="${t.completed ? 'text-decoration: line-through;' : ''}">${t.title}</div>
                         <span class="item-badge badge-${t.priority}">${
@@ -1059,7 +1345,7 @@
                             📅 <strong>Créée le :</strong> ${formatDate(t.createdAt)}
                         </p>
                         ${t.completed && t.completedAt ? `
-                            <p style="color: #90C890; font-size: 0.85em;">
+                            <p style="color: #81C784; font-size: 0.85em;">
                                 ✅ <strong>Accomplie le :</strong> ${formatDate(t.completedAt)}
                             </p>
                         ` : ''}
@@ -1147,11 +1433,11 @@
             }
 
             const habitsData = last7Days.map(day => 
-                data.habits.filter(h => h.days.includes(day)).length
+                data.habits.filter(h => h.days && h.days.includes(day)).length
             );
 
             const tasksData = last7Days.map(day => 
-                data.tasks.filter(t => t.completed && t.createdAt && t.createdAt.startsWith(day)).length
+                data.tasks.filter(t => t.completed && t.completedAt && t.completedAt.startsWith(day)).length
             );
 
             if (charts.evolution) charts.evolution.destroy();
@@ -1163,20 +1449,51 @@
                     datasets: [{
                         label: 'Habitudes',
                         data: habitsData,
-                        borderColor: '#C9A58C',
-                        backgroundColor: 'rgba(201, 165, 140, 0.1)',
-                        tension: 0.4
+                        borderColor: '#74B9FF',
+                        backgroundColor: 'rgba(116, 185, 255, 0.2)',
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#74B9FF',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
                     }, {
                         label: 'Tâches',
                         data: tasksData,
-                        borderColor: '#B8967E',
-                        backgroundColor: 'rgba(184, 150, 126, 0.1)',
-                        tension: 0.4
+                        borderColor: '#81C784',
+                        backgroundColor: 'rgba(129, 199, 132, 0.2)',
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#81C784',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
-                    scales: { y: { beginAtZero: true } }
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 13,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    },
+                    scales: { 
+                        y: { 
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        } 
+                    }
                 }
             });
 
@@ -1193,10 +1510,25 @@
                     labels: ['Urgentes', 'Importantes', 'Normales', 'Plus tard'],
                     datasets: [{
                         data: [urgentTasks, importantTasks, normalTasks, laterTasks],
-                        backgroundColor: ['#D98880', '#E8C4A0', '#90C890', '#C4D5E8']
+                        backgroundColor: ['#FF4D4F', '#FAAD14', '#52C41A', '#1890FF'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
                     }]
                 },
-                options: { responsive: true }
+                options: { 
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
             });
         }
 
