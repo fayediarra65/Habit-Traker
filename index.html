@@ -1110,8 +1110,9 @@
                 habit.days.splice(idx, 1);
                 if (habit.completed > 0) habit.completed--;
                 data.points = Math.max(0, data.points - 10);
-                console.log('✅ Jour décoché:', day, 'Points:', data.points);
+                console.log('❌ Jour décoché:', day, 'Points:', data.points);
                 showNotif('↩️ -10 points');
+                trackHistory('habit', habitId, 'unchecked');
             } else {
                 // Cocher
                 habit.days.push(day);
@@ -1119,14 +1120,13 @@
                 data.points += 10;
                 console.log('✅ Jour coché:', day, 'Points:', data.points);
                 showNotif('✨ +10 points !');
+                trackHistory('habit', habitId, 'checked');
             }
-            
-            trackHistory('habit', habitId, idx > -1 ? 'unchecked' : 'checked');
             
             // Sauvegarder PUIS rafraîchir
             saveData();
             
-            // Rafraîchissement IMMÉDIAT sans attendre
+            // Rafraîchissement IMMÉDIAT
             setTimeout(() => {
                 render();
                 updateCharts();
