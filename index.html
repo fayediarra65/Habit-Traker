@@ -143,6 +143,7 @@
         .badge-important { background: #E8C4A0; color: #6B4532; }
         .badge-normal { background: #90C890; color: white; }
         .badge-later { background: #C4D5E8; color: #455566; }
+        .badge-in-progress { background: #F5B041; color: white; }
         .badge-daily { background: #E8C4D5; color: #6B4555; }
         .badge-weekly { background: #C4D5E8; color: #455566; }
         .badge-temporary { background: #E8C4A0; color: #6B4532; }
@@ -461,6 +462,7 @@
                             <option value="important">🟡 Important</option>
                             <option value="normal">🟢 Normal</option>
                             <option value="later">🔵 Plus tard</option>
+                            <option value="in-progress">🟠En cours</option>
                         </select>
                     </div>
                 </div>
@@ -477,6 +479,7 @@
                 <button class="filter-btn" onclick="filterItems('tasks', 'urgent')">🔴 Urgentes</button>
                 <button class="filter-btn" onclick="filterItems('tasks', 'important')">🟡 Importantes</button>
                 <button class="filter-btn" onclick="filterItems('tasks', 'later')">🔵 Plus tard</button>
+                <button class="filter-btn" onclick="filterItems('tasks', 'in-progress')">🟠 En cours</button>
             </div>
 
             <div class="items-grid" id="tasksList"></div>
@@ -810,7 +813,8 @@
                 urgent: data.tasks.filter(t => t.priority === 'urgent'),
                 important: data.tasks.filter(t => t.priority === 'important'),
                 normal: data.tasks.filter(t => t.priority === 'normal'),
-                later: data.tasks.filter(t => t.priority === 'later')
+                later: data.tasks.filter(t => t.priority === 'later'),
+                'in-progress': data.tasks.filter(t => t.priority === 'in-progress')
             };
             
             // Stats objectifs
@@ -870,8 +874,8 @@
                     ${Object.keys(tasksByPriority).map(priority => {
                         const tasks = tasksByPriority[priority];
                         const completed = tasks.filter(t => t.completed).length;
-                        const icon = priority === 'urgent' ? '🔴' : priority === 'important' ? '🟡' : priority === 'normal' ? '🟢' : '🔵';
-                        const label = priority === 'urgent' ? 'Urgentes' : priority === 'important' ? 'Importantes' : priority === 'normal' ? 'Normales' : 'Plus tard';
+                        const icon = priority === 'urgent' ? '🔴' : priority === 'important' ? '🟡' : priority === 'normal' ? '🟢' : priority === 'in-progress' ? '🟠' : '🔵';
+                        const label = priority === 'urgent' ? 'Urgentes' : priority === 'important' ? 'Importantes' : priority === 'normal' ? 'Normales' : priority === 'in-progress' ? 'En cours' : 'Plus tard';
                         return `
                             <div class="report-item">
                                 <span class="item-name">${icon} ${label}</span>
@@ -1335,7 +1339,8 @@
                         <span class="item-badge badge-${t.priority}">${
                             t.priority === 'urgent' ? '🔴 Urgent' :
                             t.priority === 'important' ? '🟡 Important' :
-                            t.priority === 'normal' ? '🟢 Normal' : '🔵 Plus tard'
+                            t.priority === 'normal' ? '🟢 Normal' :
+                            t.priority === 'in-progress' ? '🟠 En cours' : '🔵 Plus tard'
                         }</span>
                     </div>
                     <p style="color: #666; margin: 10px 0;">${t.type === 'work' ? '💼 Pro' : '🏠 Perso'}</p>
@@ -1503,14 +1508,15 @@
             const importantTasks = data.tasks.filter(t => t.priority === 'important').length;
             const normalTasks = data.tasks.filter(t => t.priority === 'normal').length;
             const laterTasks = data.tasks.filter(t => t.priority === 'later').length;
+            const inProgressTasks = data.tasks.filter(t => t.priority === 'in-progress').length;
 
             charts.tasks = new Chart(ctx2, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Urgentes', 'Importantes', 'Normales', 'Plus tard'],
+                    labels: ['Urgentes', 'Importantes', 'Normales', 'En cours', 'Plus tard'],
                     datasets: [{
-                        data: [urgentTasks, importantTasks, normalTasks, laterTasks],
-                        backgroundColor: ['#FF4D4F', '#FAAD14', '#52C41A', '#1890FF'],
+                        data: [urgentTasks, importantTasks, normalTasks, inProgressTasks, laterTasks],
+                        backgroundColor: ['#FF4D4F', '#FAAD14', '#52C41A', '#F5B041', '#1890FF'],
                         borderWidth: 2,
                         borderColor: '#fff'
                     }]
